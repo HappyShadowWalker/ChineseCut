@@ -1,6 +1,6 @@
 __author__ = 'ShadowWalker'
 from numpy import *
-import decimal, math
+from math import log
 # 读取HMM模型参数
 def preViterbi(transFileName, emitFileName):
     # 读取得到隐状态之间的转移概率矩阵
@@ -53,8 +53,6 @@ def preViterbi(transFileName, emitFileName):
                 SContent = emitFileContent[i+1].split()
                 for j in range(len(SContent)):
                     emitMatrix[3][j] = -float(SContent[j][1:len(SContent[j])])
-    print(transMatrix)
-    print(emitMatrix)
     return transMatrix, emitMatrix, worddict
 
 # 实现 Viterbi 算法
@@ -63,22 +61,30 @@ def viterbi(cutStr , iniProb, transMatrix, emitMatirx, wordDict):
     lenstr = len(cutStr)
     weight = arange(4 * lenstr, dtype=float64).reshape(4, lenstr)
     path = arange(4 * lenstr, dtype=float64).reshape(4, lenstr)
-    weight[0][0] = iniProb[0] + emitMatirx[0][wordDict.index(cutStr[0])]
+    if cutStr[0] in wordDict:
+        weight[0][0] = iniProb[0] + emitMatirx[0][wordDict.index(cutStr[0])]
+    else:
+        weight[0][0] = iniProb[0] + log(1/len(wordDict))
     weight[1][0] = MinDouble
     weight[2][0] = MinDouble
-    weight[3][0] = iniProb[3] + emitMatirx[3][wordDict.index(cutStr[0])]
+    if cutStr[0] in wordDict:
+        weight[3][0] = iniProb[3] + emitMatirx[3][wordDict.index(cutStr[0])]
+    else:
+        weight[3][0] = iniProb[3] + log(1/len(wordDict))
     for i in range(1, lenstr):
         for j in range(4):
             weight[j][i] = MinDouble
             path[j][i] = -1
             for k in range(4):
-                temp = weight[k][i-1] + transMatrix[k][j] + emitMatirx[j][wordDict.index(cutStr[i])]
-                print (temp)
+                if cutStr[i] in wordDict:
+                    temp = weight[k][i-1] + transMatrix[k][j] + emitMatirx[j][wordDict.index(cutStr[i])]
+                else:
+                    temp = weight[k][i-1] + transMatrix[k][j] + log(1/len(wordDict))
                 if temp > weight[j][i]:
                     weight[j][i] = temp
                     path[j][i] = k
-    print(weight)
-    print(path)
+    # print(weight)
+    # print(path)
     # 对结果进行解码
     iniMaxWeight = weight[0][lenstr - 1]
     index = 0
@@ -86,16 +92,16 @@ def viterbi(cutStr , iniProb, transMatrix, emitMatirx, wordDict):
         if weight[i][lenstr-1] > iniMaxWeight:
             iniMaxWeight = weight[i][lenstr-1]
             index = i
-    print(index)
     ReverseState = []
     ReverseState.append(index)
     for j in range(1, lenstr):
         index = path[index][lenstr-j]
         ReverseState.append(index)
+    # print(ReverseState)
     NormalState = []
     for i in range(len(ReverseState)):
         NormalState.append(ReverseState[len(ReverseState)-i-1])
-    print(NormalState)
+    # print(NormalState)
 
     # 根据NormalState 分割字符串
     headIndex = 0
@@ -104,16 +110,45 @@ def viterbi(cutStr , iniProb, transMatrix, emitMatirx, wordDict):
     for i in range(len(NormalState)):
         if NormalState[i] == 0.0:
             headIndex = i
+            if i == len(cutStr) - 1:
+                cutedResult.append(cutStr[headIndex: i+1])
         if NormalState[i] == 2.0:
             endIndex = i
             cutedResult.append(cutStr[headIndex: endIndex+1])
+        if NormalState[i] == 1.0:
+            if i == len(cutStr) - 1:
+                cutedResult.append(cutStr[headIndex: i+1])
         if NormalState[i] == 3.0:
             cutedResult.append(cutStr[i])
-    print(cutedResult)
-
-# 测试算法
-TransMatrix, EmitMatrix, WordDict = preViterbi("tran.txt", "emit.txt")
-IniProb = [-0.26268660809250016, MinDouble, MinDouble, -1.4652633398537678]
-viterbi("中国的改革开放和现代化建设", IniProb, TransMatrix, EmitMatrix, WordDict)
+    # print(cutedResult)
+    return cutedResult
 
 
+def ChineseCut(testFileName, resultFileName):
+    IniProb = [-0.640070255803, MinDouble, MinDouble, -0.749199951712]
+    TransMatrix, EmitMatrix, WordDict = preViterbi("tran.txt", "emit.txt")
+    testFile = open(testFileName, 'r')
+    testFileContent = testFile.readlines()
+    resultfile = open(resultFileName, 'w')
+    resultfile.close()
+    resultfile = open(resultFileName, 'a')
+    for eachLine in testFileContent:
+        eachLine = eachLine.strip('\n')
+        if len(eachLine) > 0:
+            # cutResult = viterbi("我是一个中国人", IniProb, TransMatrix, EmitMatrix, WordDict)
+            cutResult = viterbi(eachLine, IniProb, TransMatrix, EmitMatrix, WordDict)
+            for eachword in cutResult:
+                resultfile.write(eachword + " ")
+            resultfile.write("\n")
+            print(cutResult)
+    resultfile.close()
+
+
+# 对string 进行切分
+def ChineseCutStr(cutStr):
+    IniProb = [-0.26268660809250016, MinDouble, MinDouble, -1.4652633398537678]
+    TransMatrix, EmitMatrix, WordDict = preViterbi("tran.txt", "emit.txt")
+    cutStr = cutStr.strip('\n')
+    if len(cutStr) > 0:
+        cutResult = viterbi(cutStr, IniProb, TransMatrix, EmitMatrix, WordDict)
+        print(cutResult)

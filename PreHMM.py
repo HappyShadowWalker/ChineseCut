@@ -9,7 +9,7 @@ def trainTransProb(trainFileName, tranFileName):
     trainFileContent = trainFile.read()
     trainFile.close()
     trainFileWords = trainFileContent.split()
-    print(len(trainFileWords))
+    #print(len(trainFileWords))
     # 对训练文本中的词进行遍历，得到隐状态转移概率矩阵
     BTransform = [0, 0, 0, 0, 0]
     MTransform = [0, 0, 0, 0, 0]
@@ -57,10 +57,12 @@ def trainTransProb(trainFileName, tranFileName):
                 STransform[0] = STransform[0] + 1
             elif lastWordLen > 1:
                 ETransform[0] = ETransform[0] + 1
-    print(BTransform)
-    print(MTransform)
-    print(ETransform)
-    print(STransform)
+
+    # 计算初始概率分布
+    BIniProb = log(complexWordCount/(singleWordCount+complexWordCount))
+    print(BIniProb)
+    SIniProb = log(singleWordCount/(singleWordCount+complexWordCount))
+    print(SIniProb)
     for j in range(len(BTransform)-1):
         if BTransform[j] == 0:
             BTransform[j] = belowInfinity
@@ -165,7 +167,7 @@ def trainEmitProb(trainFileName, emitFileName):
     emitFile.close()
     emitFile = open('worddict.txt', 'w')
     emitFile.write("#WordDict\n")
-    print(len(worddict))
+    # print(len(worddict))
     for eachWord in worddict:
         emitFile.write(eachWord)
         emitFile.write(" ")
@@ -179,10 +181,10 @@ def trainEmitProb(trainFileName, emitFileName):
     writeListToFile(EEmit, emitFileName)
     writeListToFile("#S", emitFileName)
     writeListToFile(SEmit, emitFileName)
-    print(BEmit)
-    print(MEmit)
-    print(EEmit)
-    print(SEmit)
+    # print(BEmit)
+    # print(MEmit)
+    # print(EEmit)
+    # print(SEmit)
 # trainEmitProb('G:\ChineseCut\PKU_GB\pku_training.txt', 'emit.txt')
 
 
