@@ -1,6 +1,8 @@
+# -*- coding:utf-8 -*-
 __author__ = 'ShadowWalker'
 from numpy import *
 from math import log
+import codecs
 # 读取HMM模型参数
 def preViterbi(transFileName, emitFileName):
     # 读取得到隐状态之间的转移概率矩阵
@@ -16,8 +18,9 @@ def preViterbi(transFileName, emitFileName):
             for j in range(len(eachLineList)):
                 transMatrix[i][j] = -float(eachLineList[j][1:len(eachLineList[j])])
     # 读取得到字典，和状态发射矩阵
-    wordFile = open('worddict.txt', 'r')
+    wordFile =codecs.open('worddict.txt', 'r',  'utf8')
     wordFileContent = wordFile.readlines()
+    print wordFileContent[1]
     wordFile.close()
     worddict = []
     for i in range(len(wordFileContent)):
@@ -58,19 +61,21 @@ def preViterbi(transFileName, emitFileName):
 # 实现 Viterbi 算法
 MinDouble = -10000000000000000
 def viterbi(cutStr , iniProb, transMatrix, emitMatirx, wordDict):
+    print "待分词的句子:", cutStr
+    print "字典单词:", wordDict[0]
     lenstr = len(cutStr)
     weight = arange(4 * lenstr, dtype=float64).reshape(4, lenstr)
     path = arange(4 * lenstr, dtype=float64).reshape(4, lenstr)
     if cutStr[0] in wordDict:
         weight[0][0] = iniProb[0] + emitMatirx[0][wordDict.index(cutStr[0])]
     else:
-        weight[0][0] = iniProb[0] + log(1/len(wordDict))
+        weight[0][0] = iniProb[0] + log(1.0/len(wordDict))
     weight[1][0] = MinDouble
     weight[2][0] = MinDouble
     if cutStr[0] in wordDict:
         weight[3][0] = iniProb[3] + emitMatirx[3][wordDict.index(cutStr[0])]
     else:
-        weight[3][0] = iniProb[3] + log(1/len(wordDict))
+        weight[3][0] = iniProb[3] + log(1.0/len(wordDict))
     for i in range(1, lenstr):
         for j in range(4):
             weight[j][i] = MinDouble
@@ -79,7 +84,7 @@ def viterbi(cutStr , iniProb, transMatrix, emitMatirx, wordDict):
                 if cutStr[i] in wordDict:
                     temp = weight[k][i-1] + transMatrix[k][j] + emitMatirx[j][wordDict.index(cutStr[i])]
                 else:
-                    temp = weight[k][i-1] + transMatrix[k][j] + log(1/len(wordDict))
+                    temp = weight[k][i-1] + transMatrix[k][j] + log(1.0/len(wordDict))
                 if temp > weight[j][i]:
                     weight[j][i] = temp
                     path[j][i] = k
