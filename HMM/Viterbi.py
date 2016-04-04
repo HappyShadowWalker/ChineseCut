@@ -3,6 +3,8 @@ __author__ = 'ShadowWalker'
 from numpy import *
 from math import log
 import codecs
+import os
+basepath = os.path.split(os.path.relpath(__file__))[0]
 # 读取HMM模型参数
 def preViterbi(transFileName, emitFileName):
     # 读取得到隐状态之间的转移概率矩阵
@@ -18,9 +20,8 @@ def preViterbi(transFileName, emitFileName):
             for j in range(len(eachLineList)):
                 transMatrix[i][j] = -float(eachLineList[j][1:len(eachLineList[j])])
     # 读取得到字典，和状态发射矩阵
-    wordFile =codecs.open('worddict.txt', 'r',  'utf8')
+    wordFile =codecs.open(basepath + '/' + 'worddict.txt', 'r',  'utf8')
     wordFileContent = wordFile.readlines()
-    print wordFileContent[1]
     wordFile.close()
     worddict = []
     for i in range(len(wordFileContent)):
@@ -62,7 +63,6 @@ def preViterbi(transFileName, emitFileName):
 MinDouble = -10000000000000000
 def viterbi(cutStr , iniProb, transMatrix, emitMatirx, wordDict):
     print "待分词的句子:", cutStr
-    print "字典单词:", wordDict[0]
     lenstr = len(cutStr)
     weight = arange(4 * lenstr, dtype=float64).reshape(4, lenstr)
     path = arange(4 * lenstr, dtype=float64).reshape(4, lenstr)
@@ -116,22 +116,26 @@ def viterbi(cutStr , iniProb, transMatrix, emitMatirx, wordDict):
         if NormalState[i] == 0.0:
             headIndex = i
             if i == len(cutStr) - 1:
-                cutedResult.append(cutStr[headIndex: i+1])
+                cutedResult.append(cutStr[headIndex: i+1].encode('utf8'))
         if NormalState[i] == 2.0:
             endIndex = i
-            cutedResult.append(cutStr[headIndex: endIndex+1])
+            cutedResult.append(cutStr[headIndex: endIndex+1].encode('utf8'))
         if NormalState[i] == 1.0:
             if i == len(cutStr) - 1:
-                cutedResult.append(cutStr[headIndex: i+1])
+                cutedResult.append(cutStr[headIndex: i+1].encode('utf8'))
         if NormalState[i] == 3.0:
-            cutedResult.append(cutStr[i])
+            cutedResult.append(cutStr[i].encode('utf8'))
     # print(cutedResult)
-    return cutedResult
+    splitedstr = ""
+    for j in range(len(cutedResult)):
+        splitedstr = splitedstr + "/" + cutedResult[j]
+
+    return splitedstr
 
 
 def ChineseCut(testFileName, resultFileName):
     IniProb = [-0.640070255803, MinDouble, MinDouble, -0.749199951712]
-    TransMatrix, EmitMatrix, WordDict = preViterbi("tran.txt", "emit.txt")
+    TransMatrix, EmitMatrix, WordDict = preViterbi(basepath + "/" +  "tran.txt", basepath + "/" + "emit.txt")
     testFile = open(testFileName, 'r')
     testFileContent = testFile.readlines()
     resultfile = open(resultFileName, 'w')
@@ -152,8 +156,8 @@ def ChineseCut(testFileName, resultFileName):
 # 对string 进行切分
 def ChineseCutStr(cutStr):
     IniProb = [-0.26268660809250016, MinDouble, MinDouble, -1.4652633398537678]
-    TransMatrix, EmitMatrix, WordDict = preViterbi("tran.txt", "emit.txt")
+    TransMatrix, EmitMatrix, WordDict = preViterbi(basepath + "/"+ "tran.txt", basepath +"/"+ "emit.txt")
     cutStr = cutStr.strip('\n')
     if len(cutStr) > 0:
         cutResult = viterbi(cutStr, IniProb, TransMatrix, EmitMatrix, WordDict)
-        print(cutResult)
+        return cutResult
